@@ -43,8 +43,8 @@ export const transcribeSpeech = async (
       audioRecordingRef.current = new Audio.Recording();
 
       const audioConfig = {
-        encoding: "LINEAR16",
-        sampleRateHertz: 16000,
+        encoding: "WEBM_OPUS",
+        sampleRateHertz: 48000,
         languageCode: "pl-PL",
       };
 
