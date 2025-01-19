@@ -1,28 +1,31 @@
 import {Request, Response} from "express";
 
 export const modelResponse = async (req: Request, res: Response) => {
-    const systemPrompt = "Jesteś asystentem nawigacyjnym w samochodzie, krótki podaj przebieg trasy w prostych do zapamiętania krokach, używaj nazw ulic, punktów zainteresowania"
+    const systemPrompt = "Jesteś asystentem nawigacyjnym w samochodzie, krótki podaj przebieg trasy w prostych " +
+        "do zapamiętania krokach, używaj nazw ulic, punktów zainteresowania, nie używaj składni markdown ani znaczników" +
+        "końca linii '\n' w odpowiedzi"
     const data = req.body;
     const userPrompt = data.userPrompt;
+    const history = data.history;
 
     if (!userPrompt) return res.status(422).send("No userPrompt was provided.");
 
+    history.push({
+        "role": "user",
+        "parts": [
+            {
+                "text": `${userPrompt}`,
+            }
+        ]
+    })
+    console.log(history);
     try {
         const modelResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-1219:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
             {
                 method: "POST",
                 body: JSON.stringify({
-                    "contents": [
-                        {
-                            "role": "user",
-                            "parts": [
-                                {
-                                    "text": `${userPrompt}`,
-                                }
-                            ]
-                        }
-                    ],
+                    "contents": history,
                     "generationConfig": {
                         "temperature": 1,
                         "topP": 0.95,
