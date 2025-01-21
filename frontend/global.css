@@ -1,0 +1,57 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+      --background: 204 22% 12%;
+      --foreground: 0 0 100%;
+      --primary: 207 90% 54%;
+      --primary-foreground: 210 40% 98%;
+
+      --secondary: 291 64% 42%;
+      --secondary-foreground: 0 0% 100%;
+  
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 240 4% 46%;
+  
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+  
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
+  
+      --rack-blue: 214 100% 99%;
+  
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 222.2 84% 4.9%;
+  
+      --radius: 0.5rem;
+      --warning: 27 100% 47%;
+      --success: 123 46% 34%;
+  
+      --green: 137 68% 43%;
+      --green-light: 123 38% 64%;
+      --green-background: 137 47% 97%;
+  
+      --red: 4 90% 58%;
+      --red-light: 0 69% 67%;
+      --red-background: 0 100% 97%;
+  
+      --purple: 227 81% 77%;
+  
+      --disabled: 198 16% 84%;
+    }
+  
+  @layer base {
+    * {
+      @apply border-border;
+    }
+    body {
+      @apply bg-background font-lato text-foreground;
+    }
+  }
+}

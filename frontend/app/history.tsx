@@ -11,14 +11,8 @@ export default function MainScreen() {
   return (
     <View className="bg-background h-screen text-white flex flex-col items-center justify-center gap-20">
       <View className="flex flex-col items-center gap-2">
-        <Text className="text-foreground text-3xl">Twoja droga</Text>
-        <Text className="text-[#7AC0D2] text-3xl">nasze wsparcie</Text>
+        <Text className="text-foreground text-3xl">Historia</Text>
       </View>
-      <Image
-          source={require("../assets/images/logo.jpg")} 
-          style={{ width: 200, height: 200 }}
-          className="rounded-3xl shadow-xl"
-        />
       <Link href="/home" className="my-10 py-3 w-[70%] bg-[#B5EBF2] rounded-2xl shadow-xl text-2xl text-center tracking-wider">Zaczynamy</Link>
     </View>
   );
