@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useLayoutEffect } from "react";
 import {
-  StyleSheet,
   Text,
   SafeAreaView,
   ScrollView,
@@ -9,10 +8,18 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Audio } from "expo-av";
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { transcribeSpeech } from "@/functions/transcribeSpeech";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { recordSpeech } from "@/functions/recordSpeech";
 import useWebFocus from "@/hooks/useWebFocus";
+import { getAssistantAnswer } from "@/functions/getAssistantAnswer";
+import { useRecoilState } from "recoil";
+import { historyState } from "@/state/history";
+import SoundWave from "@/components/SoundWave";
+import Toast from "react-native-toast-message";
+import { Link } from "expo-router";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function HomeScreen() {
   const [transcribedSpeech, setTranscribedSpeech] = useState("");
@@ -21,6 +28,33 @@ export default function HomeScreen() {
   const isWebFocused = useWebFocus();
   const audioRecordingRef = useRef(new Audio.Recording());
   const webAudioPermissionsRef = useRef<MediaStream | null>(null);
+  const [history, setHistory] = useRecoilState(historyState);
+  const [shadowStyle, setShadowStyle] = useState({});
+
+  useLayoutEffect(() => {
+    if (isRecording) {
+      setShadowStyle({
+        shadowRadius: 30,
+        shadowOpacity: 0.5,
+        shadowColor: "white",
+      });
+    } else {
+      setShadowStyle({});
+    }
+  }, [isRecording]);
+
+  useEffect(() => {
+    console.log(history);
+  }, [history]);
+
+  useEffect(() => {
+    if (transcribedSpeech) {
+      console.log("before with", transcribeSpeech);
+      const response = void getAssistantAnswer({ userPrompt: transcribedSpeech, history: [] }).then((response) => {
+        setHistory([...history, { role: "user", parts: [{ text: transcribedSpeech }] }, { role: "model", parts: [{ text: response.text }] }]);
+      });
+    }
+  }, [transcribedSpeech]);
 
   useEffect(() => {
     if (isWebFocused) {
@@ -63,41 +97,57 @@ export default function HomeScreen() {
     }
   };
 
+  const clearHistory = () => {
+    setHistory([]);
+    Toast.show({
+      type: 'success',
+      text1: 'Pomyślnie usunięto historię czatu',
+    });
+  }
+
   return (
     <SafeAreaView>
       <ScrollView >
         <View className="bg-background h-screen text-white flex flex-col items-center justify-center gap-20">
-          <Text className="text-white text-3xl">Jak mogę ci pomóc?</Text>
-          <View >
-            {isTranscribing ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <Text
-                style={{
-                  color: transcribedSpeech ? "#000" : "rgb(150,150,150)",
-                }}
-              >
-                {transcribedSpeech ||
-                  "Your transcribed text will be shown here"}
-              </Text>
-            )}
+          <Text className="text-white text-3xl mt-auto">Jak mogę ci pomóc?</Text>
+          <View className="flex flex-row items-center justify-center h-[80px] gap-1">
+            <SoundWave isRecording={isRecording} />
           </View>
           <TouchableOpacity
             style={{
               opacity: isRecording || isTranscribing ? 0.5 : 1,
+              ...shadowStyle,
+              borderRadius: "100%"
             }}
             onPressIn={startRecording}
             onPressOut={stopRecording}
             disabled={isRecording || isTranscribing}
           >
-            {isRecording ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <FontAwesome name="microphone" size={40} color="white" />
-            )}
+            <View className="rounded-full bg-[#7AC0D2]/50 w-[180px] h-[180px] flex items-center justify-center">
+              <View className="rounded-full bg-[#B5EBF2] h-[140px] w-[140px] flex items-center justify-center">
+                {isTranscribing ? (
+                  <ActivityIndicator size={40} color="white" />
+                ) : (
+                  <FontAwesome name="microphone" size={100} />
+                )}
+              </View>
+            </View>
           </TouchableOpacity>
+          <View className="mb-10 mt-auto px-10 w-full flex flex-row items-center justify-between gap-2">
+            <TouchableOpacity
+              onPress={clearHistory}
+              className="flex flex-col gap-1 items-center"
+            >
+              <MaterialIcons name="clear" size={24} className="text-rose-400" />
+              <Text className="text-sm text-rose-400">Wyczyść historię</Text>
+            </TouchableOpacity>
+            <Link href="/history" className="flex flex-col gap-1 items-center">
+              <Ionicons name="chatbubble-ellipses-outline" size={24} color="white" />
+              <Text className="text-sm text-foreground">Historia</Text>
+            </Link>
+          </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
