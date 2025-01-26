@@ -27,7 +27,7 @@ export const transcribeSpeech = async (
         // const sound = new Audio.Sound();
         // await sound.loadAsync({ uri: audioUrl });
         // await sound.playAsync();
-        
+
         const foundBase64 = (await readBlobAsBase64(blob)) as string;
         // Example: data:audio/wav;base64,asdjfioasjdfoaipsjdf
         const removedPrefixBase64 = foundBase64.split("base64,")[1];
@@ -49,13 +49,11 @@ export const transcribeSpeech = async (
       };
 
       if (recordingUri && dataUrl) {
-        const rootOrigin =
-          Platform.OS === "android"
-            ? "10.0.2.2"
-            : Device.isDevice
-            ? process.env.LOCAL_DEV_IP || "localhost"
-            : "localhost";
-        const serverUrl = `http://${rootOrigin}:4000`;
+        const serverUrl =
+          Platform.OS === "android" || Platform.OS === "ios" || Device.isDevice
+            ? "https://20cb-77-222-252-51.ngrok-free.app"
+            : "http://locaalhost:4000";
+        console.log("Sending audio to server for transcription...", serverUrl);
         const serverResponse = await fetch(`${serverUrl}/speech-to-text`, {
           method: "POST",
           headers: {

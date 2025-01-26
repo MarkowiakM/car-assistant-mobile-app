@@ -1,11 +1,15 @@
-import {Request, Response} from "express";
+import { Request, Response } from "express";
 
 export const modelResponse = async (req: Request, res: Response) => {
-    const systemPrompt = "Jesteś asystentem nawigacyjnym w samochodzie, krótki podaj przebieg trasy w prostych " +
-        "do zapamiętania krokach, używaj nazw ulic, punktów zainteresowania, nie używaj składni markdown ani znaczników" +
-        "końca linii '\n' w odpowiedzi"
+    const systemPrompt = "Jesteś asystentem w samochodzie, zapytany o wskazanie drogi" +
+        " podaj krótkie, łatwe do zapamiętania wskazówki, skupiając się na nazwach ulic, punktach zainteresowania." +
+        " Gdy zostaniesz zapytany o odległość lub czas jaki zajmie podróż, odpowiedz w krótki i zwięzły sposób. " +
+        "Gdy zostaniesz zapytany o pomoc w rozwiązaniu problemu to podaj zwięzłą odpowiedź w postaci listy kroków." +
+        " W swoich odpowiedziach pod żadnym pozorem nie używaj składni markdown ani znaczników końca linii (\n) " +
+        "gdyż twoja odpowiedź będzie wejściem do syntezatora mowy. Nie numeruj kroków"
     const data = req.body;
     const userPrompt = data.userPrompt;
+    const location = data.location; // adres po backendzie
     const history = data.history;
 
     if (!userPrompt) return res.status(422).send("No userPrompt was provided.");
@@ -18,59 +22,70 @@ export const modelResponse = async (req: Request, res: Response) => {
             }
         ]
     })
-    console.log(history);
-    
+    console.log(history)
     try {
-        const modelResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-1219:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
             {
                 method: "POST",
-                body: JSON.stringify({
-                    "contents": history,
-                    "generationConfig": {
-                        "temperature": 1,
-                        "topP": 0.95,
-                        "topK": 64,
-                        "maxOutputTokens": 8192,
-                        "stopSequences": []
-                    },
-                    "safetySettings": [
-                        {
-                            "category": "HARM_CATEGORY_HARASSMENT",
-                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_HATE_SPEECH",
-                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
-                        }
-                    ],
-                    "systemInstruction": {
-                        "parts": [
-                            {
-                                "text": `${systemPrompt}`
-                            }
-                        ]
-                    }
-                }),
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json",
                 },
+                body: JSON.stringify({
+                    contents: history,
+                    generationConfig: {
+                        temperature: 1,
+                        topP: 0.95,
+                        topK: 64,
+                        maxOutputTokens: 8192,
+                        stopSequences: [],
+                    },
+                    safetySettings: [
+                        {
+                            category: "HARM_CATEGORY_HARASSMENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                        },
+                        {
+                            category: "HARM_CATEGORY_HATE_SPEECH",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                        },
+                        {
+                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                        },
+                        {
+                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                        },
+                    ],
+                    systemInstruction: {
+                        parts: [
+                            {
+                                text: systemPrompt,
+                            },
+                        ],
+                    },
+                }),
             }
-        ).then((response) => response.json());
-        console.log("modelResponse: ", modelResponse.candidates[0].content.parts[1]);
-        return res.send(modelResponse.candidates[0].content.parts[1]);
+        );
+
+        if (!response.ok) {
+            const errorDetails = await response.text();
+            throw new Error(`API request failed with status ${response.status}: ${errorDetails}`);
+        }
+
+        const modelResponse = await response.json();
+
+        const generatedContent = modelResponse?.candidates?.[0]?.content?.parts?.[0].text;
+
+        if (!generatedContent) {
+            throw new Error("No content was generated by the model.");
+        }
+
+        return res.send({ text: generatedContent});
     } catch (err) {
         console.error("Error converting speech to text: ", err);
-        res.status(404).send(err);
-        return err;
+        return res.status(500).send({ error: "Internal Server Error", details: err.message });
     }
 };

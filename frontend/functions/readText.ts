@@ -3,13 +3,11 @@ import * as Device from "expo-device";
 import { ModelRequest, ModelResponse } from "@/types/AnswerQuestion";
 
 export const readText = async (text: string): Promise<any> => {
-    const rootOrigin =
-        Platform.OS === "android"
-            ? "10.0.2.2"
-            : Device.isDevice
-                ? process.env.LOCAL_DEV_IP || "localhost"
-                : "localhost";
-    const serverUrl = `http://${rootOrigin}:4000`;
+    const serverUrl =
+              Platform.OS === "android" || Platform.OS === "ios" || Device.isDevice
+                ? "https://20cb-77-222-252-51.ngrok-free.app"
+                : "http://locaalhost:4000"; 
+    console.log("Text to speech...", serverUrl);
 
     const serverResponse = await fetch(`${serverUrl}/text-to-speech`, {
         method: "POST",

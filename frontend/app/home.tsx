@@ -22,17 +22,36 @@ import { Link } from "expo-router";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { readText } from "@/functions/readText";
 
+// godzina w modelResponse po backendzie
+// w model wpisać te numery
+// frontend wysyłać lokalizację
+
 export default function HomeScreen() {
   const [transcribedSpeech, setTranscribedSpeech] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isGettingResponse, setIsGettingResponse] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const isWebFocused = useWebFocus();
   const audioRecordingRef = useRef(new Audio.Recording());
   const webAudioPermissionsRef = useRef<MediaStream | null>(null);
   const [history, setHistory] = useRecoilState(historyState);
   const [shadowStyle, setShadowStyle] = useState({});
-  const [audioSrc, setAudioSrc] = useState("");
-  const audioPlayerRef = useRef(new Audio.Sound());
+  const sound = useRef(new Audio.Sound()); // check to
+
+  console.log("isRecording: ", isRecording)
+  console.log("isTranscribing: ", isTranscribing)
+  console.log("isGettingResponse: ", isGettingResponse)
+  console.log("isPlaying: ", isPlaying)
+
+  useEffect(() => {
+    return sound.current
+      ? () => {
+        sound.current.unloadAsync();
+      }
+      : undefined;
+  }, []);
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
 
   useLayoutEffect(() => {
     if (isRecording) {
@@ -52,7 +71,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (transcribedSpeech) {
-      void getAssistantAnswer({ userPrompt: transcribedSpeech, history: [] })
+      setIsGettingResponse(true);
+      void getAssistantAnswer({ userPrompt: transcribedSpeech, history })
         .then((response) => {
           setHistory([
             ...history,
@@ -61,9 +81,28 @@ export default function HomeScreen() {
           ]);
           return readText(response.text);
         })
-        .then((audioResponse) => {
+        .then(async (audioResponse) => {
+          setIsGettingResponse(false);
           console.log(audioResponse);
-          setAudioSrc(`data:audio/mp3;base64,${audioResponse.audioContent}`);
+
+          try {
+            setIsPlaying(true);
+            await sound.current.unloadAsync();
+            await sound.current.loadAsync(
+              { uri: `data:audio/mp3;base64,${audioResponse.audioContent}` }
+            );
+            const status = await sound.current.getStatusAsync();
+            const audioDuration = status?.durationMillis ?? 0;
+
+            await sound.current.playAsync();
+
+            setTimeout(() => {
+              setIsPlaying(false);
+            }, audioDuration);
+
+          } catch (error) {
+            console.error('Error loading or playing audio', error);
+          }
         })
         .catch(() => {
           Toast.show({
@@ -73,24 +112,6 @@ export default function HomeScreen() {
         });
     }
   }, [transcribedSpeech]);
-
-  useEffect(() => {
-    if (audioSrc) {
-      (async () => {
-        try {
-          await audioPlayerRef.current.unloadAsync();
-          await audioPlayerRef.current.loadAsync({ uri: audioSrc });
-          await audioPlayerRef.current.playAsync();
-        } catch (error) {
-          console.error("Error playing audio:", error);
-          Toast.show({
-            type: "error",
-            text1: "Nie udało się odtworzyć odpowiedzi",
-          });
-        }
-      })();
-    }
-  }, [audioSrc]);
 
   useEffect(() => {
     if (isWebFocused) {
@@ -113,12 +134,25 @@ export default function HomeScreen() {
 
   const startRecording = async () => {
     setIsRecording(true);
-    await recordSpeech(
-      audioRecordingRef,
-      setIsRecording,
-      !!webAudioPermissionsRef.current
-    );
+    try {
+      if (permissionResponse?.status !== 'granted') {
+        console.log('Requesting permission..');
+        await requestPermission();
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      await recordSpeech(
+        audioRecordingRef,
+        setIsRecording,
+        !!webAudioPermissionsRef.current
+      );
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
   };
+
 
   const stopRecording = async () => {
     setIsRecording(false);
@@ -147,21 +181,21 @@ export default function HomeScreen() {
         <View className="pt-20 bg-background h-screen text-white flex flex-col items-center justify-center gap-20">
           <Text className="text-white text-3xl mt-auto">Jak mogę ci pomóc?</Text>
           <View className="flex flex-row items-center justify-center h-[80px] gap-1">
-            <SoundWave isRecording={isRecording} />
+            <SoundWave isRecording={isRecording || isPlaying} />
           </View>
           <TouchableOpacity
             style={{
-              opacity: isRecording || isTranscribing ? 0.5 : 1,
+              opacity: isRecording || isTranscribing || isPlaying ? 0.5 : 1,
               ...shadowStyle,
               borderRadius: "100%"
             }}
             onPressIn={startRecording}
             onPressOut={stopRecording}
-            disabled={isRecording || isTranscribing}
+            disabled={isRecording || isTranscribing || isPlaying}
           >
             <View className="rounded-full bg-[#7AC0D2]/50 w-[180px] h-[180px] flex items-center justify-center">
               <View className="rounded-full bg-[#B5EBF2] h-[140px] w-[140px] flex items-center justify-center">
-                {isTranscribing ? (
+                {isTranscribing || isGettingResponse ? (
                   <ActivityIndicator size={40} color="white" />
                 ) : (
                   <FontAwesome name="microphone" size={100} />

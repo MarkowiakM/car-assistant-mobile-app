@@ -30,6 +30,6 @@ app.get("/", (req, res) => {
   res.send("The Speech-to-Text API is up and running!");
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+app.listen(4000, '0.0.0.0', () => {
+  console.log('Server running on http://0.0.0.0:4000');
 });
