@@ -19,6 +19,7 @@ export const modelResponse = async (req: Request, res: Response) => {
         ]
     })
     console.log(history);
+    
     try {
         const modelResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-1219:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
