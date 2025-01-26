@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 
 export const modelResponse = async (req: Request, res: Response) => {
-    const systemPrompt = "Jesteś asystentem nawigacyjnym w samochodzie, krótki podaj przebieg trasy w prostych " +
-        "do zapamiętania krokach, używaj nazw ulic, punktów zainteresowania, nie używaj składni markdown ani znaczników" +
-        "końca linii '\n' w odpowiedzi"
+    const systemPrompt = "Jesteś asystentem w samochodzie, zapytany o wskazanie drogi" +
+        " podaj krótkie, łatwe do zapamiętania wskazówki, skupiając się na nazwach ulic, punktach zainteresowania." +
+        " Gdy zostaniesz zapytany o odległość lub czas jaki zajmie podróż, odpowiedz w krótki i zwięzły sposób. " +
+        "Gdy zostaniesz zapytany o pomoc w rozwiązaniu problemu to podaj zwięzłą odpowiedź w postaci listy kroków." +
+        " W swoich odpowiedziach pod żadnym pozorem nie używaj składni markdown ani znaczników końca linii (\n) " +
+        "gdyż twoja odpowiedź będzie wejściem do syntezatora mowy. Nie numeruj kroków"
     const data = req.body;
     const userPrompt = data.userPrompt;
     const history = data.history;
@@ -18,10 +21,10 @@ export const modelResponse = async (req: Request, res: Response) => {
             }
         ]
     })
-
+    console.log(history)
     try {
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-1219:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
             {
                 method: "POST",
                 headers: {
