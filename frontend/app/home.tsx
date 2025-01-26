@@ -22,6 +22,10 @@ import { Link } from "expo-router";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { readText } from "@/functions/readText";
 
+// godzina w modelResponse po backendzie
+// w model wpisać te numery
+// frontend wysyłać lokalizację
+
 export default function HomeScreen() {
   const [transcribedSpeech, setTranscribedSpeech] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -33,7 +37,7 @@ export default function HomeScreen() {
   const webAudioPermissionsRef = useRef<MediaStream | null>(null);
   const [history, setHistory] = useRecoilState(historyState);
   const [shadowStyle, setShadowStyle] = useState({});
-  const sound = useRef(new Audio.Sound());
+  const sound = useRef(new Audio.Sound()); // check to
 
   console.log("isRecording: ", isRecording)
   console.log("isTranscribing: ", isTranscribing)
@@ -82,12 +86,19 @@ export default function HomeScreen() {
           console.log(audioResponse);
 
           try {
-            // setIsPlaying(true);
+            setIsPlaying(true);
+            await sound.current.unloadAsync();
             await sound.current.loadAsync(
               { uri: `data:audio/mp3;base64,${audioResponse.audioContent}` }
             );
+            const status = await sound.current.getStatusAsync();
+            const audioDuration = status?.durationMillis ?? 0;
 
             await sound.current.playAsync();
+
+            setTimeout(() => {
+              setIsPlaying(false);
+            }, audioDuration);
 
           } catch (error) {
             console.error('Error loading or playing audio', error);
@@ -101,6 +112,7 @@ export default function HomeScreen() {
         });
     }
   }, [transcribedSpeech]);
+
   useEffect(() => {
     if (isWebFocused) {
       const getMicAccess = async () => {
@@ -173,13 +185,13 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity
             style={{
-              opacity: isRecording || isTranscribing ? 0.5 : 1,
+              opacity: isRecording || isTranscribing || isPlaying ? 0.5 : 1,
               ...shadowStyle,
               borderRadius: "100%"
             }}
             onPressIn={startRecording}
             onPressOut={stopRecording}
-            disabled={isRecording || isTranscribing}
+            disabled={isRecording || isTranscribing || isPlaying}
           >
             <View className="rounded-full bg-[#7AC0D2]/50 w-[180px] h-[180px] flex items-center justify-center">
               <View className="rounded-full bg-[#B5EBF2] h-[140px] w-[140px] flex items-center justify-center">

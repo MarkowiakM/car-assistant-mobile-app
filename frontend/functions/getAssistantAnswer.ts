@@ -5,7 +5,7 @@ import { ModelRequest, ModelResponse } from "@/types/AnswerQuestion";
 export const getAssistantAnswer = async (prompt: ModelRequest): Promise<ModelResponse> => {
     const serverUrl =
               Platform.OS === "android" || Platform.OS === "ios" || Device.isDevice
-                ? "https://995a-77-222-252-51.ngrok-free.app"
+                ? "https://20cb-77-222-252-51.ngrok-free.app"
                 : "http://locaalhost:4000"; 
     console.log("Getting assistant answer...", serverUrl);
 

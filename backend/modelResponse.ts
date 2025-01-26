@@ -9,6 +9,7 @@ export const modelResponse = async (req: Request, res: Response) => {
         "gdyż twoja odpowiedź będzie wejściem do syntezatora mowy. Nie numeruj kroków"
     const data = req.body;
     const userPrompt = data.userPrompt;
+    const location = data.location; // adres po backendzie
     const history = data.history;
 
     if (!userPrompt) return res.status(422).send("No userPrompt was provided.");
