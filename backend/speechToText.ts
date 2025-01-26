@@ -27,7 +27,6 @@ export const speechToText = async (req: Request, res: Response) => {
         },
       }
     ).then((response) => response.json());
-    console.log("Speech-to-text results: ", speechResults);
     return res.send(speechResults);
   } catch (err) {
     console.error("Error converting speech to text: ", err);
