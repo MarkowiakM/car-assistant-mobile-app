@@ -26,6 +26,8 @@ export default function HomeScreen() {
   const [transcribedSpeech, setTranscribedSpeech] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isGettingResponse, setIsGettingResponse] = useState(false);
+  const [isTellingResponse, setIsTellingResponse] = useState(false);
   const isWebFocused = useWebFocus();
   const audioRecordingRef = useRef(new Audio.Recording());
   const webAudioPermissionsRef = useRef<MediaStream | null>(null);
@@ -52,7 +54,8 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (transcribedSpeech) {
-      void getAssistantAnswer({ userPrompt: transcribedSpeech, history: [] })
+      setIsGettingResponse(true);
+      void getAssistantAnswer({ userPrompt: transcribedSpeech, history })
         .then((response) => {
           setHistory([
             ...history,
@@ -62,7 +65,7 @@ export default function HomeScreen() {
           return readText(response.text);
         })
         .then((audioResponse) => {
-          console.log(audioResponse);
+          setIsGettingResponse(false);
           setAudioSrc(`data:audio/mp3;base64,${audioResponse.audioContent}`);
         })
         .catch(() => {
@@ -80,9 +83,14 @@ export default function HomeScreen() {
         try {
           await audioPlayerRef.current.unloadAsync();
           await audioPlayerRef.current.loadAsync({ uri: audioSrc });
+          audioPlayerRef.current.setOnPlaybackStatusUpdate((status) => {
+            if (status.isLoaded) {
+                setIsTellingResponse(true);
+              const x = setTimeout(() => { setIsTellingResponse(false)}, status.durationMillis ?? 1000);
+              return () => clearTimeout(x);
+          }});
           await audioPlayerRef.current.playAsync();
         } catch (error) {
-          console.error("Error playing audio:", error);
           Toast.show({
             type: "error",
             text1: "Nie udało się odtworzyć odpowiedzi",
@@ -91,7 +99,7 @@ export default function HomeScreen() {
       })();
     }
   }, [audioSrc]);
-
+  
   useEffect(() => {
     if (isWebFocused) {
       const getMicAccess = async () => {
@@ -147,7 +155,7 @@ export default function HomeScreen() {
         <View className="pt-20 bg-background h-screen text-white flex flex-col items-center justify-center gap-20">
           <Text className="text-white text-3xl mt-auto">Jak mogę ci pomóc?</Text>
           <View className="flex flex-row items-center justify-center h-[80px] gap-1">
-            <SoundWave isRecording={isRecording} />
+            <SoundWave isRecording={isRecording || isTellingResponse} />
           </View>
           <TouchableOpacity
             style={{
@@ -161,7 +169,7 @@ export default function HomeScreen() {
           >
             <View className="rounded-full bg-[#7AC0D2]/50 w-[180px] h-[180px] flex items-center justify-center">
               <View className="rounded-full bg-[#B5EBF2] h-[140px] w-[140px] flex items-center justify-center">
-                {isTranscribing ? (
+                {isTranscribing || isGettingResponse ? (
                   <ActivityIndicator size={40} color="white" />
                 ) : (
                   <FontAwesome name="microphone" size={100} />

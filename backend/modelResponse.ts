@@ -18,7 +18,6 @@ export const modelResponse = async (req: Request, res: Response) => {
             }
         ]
     })
-    console.log("history: ", history);
 
     try {
         const response = await fetch(
@@ -67,8 +66,6 @@ export const modelResponse = async (req: Request, res: Response) => {
             }
         );
 
-        console.log("response status: ", response.status);
-
         if (!response.ok) {
             const errorDetails = await response.text();
             throw new Error(`API request failed with status ${response.status}: ${errorDetails}`);
@@ -76,8 +73,6 @@ export const modelResponse = async (req: Request, res: Response) => {
 
         const modelResponse = await response.json();
 
-
-        console.log(modelResponse?.candidates?.[0]?.content?.parts?.[0].text);
         const generatedContent = modelResponse?.candidates?.[0]?.content?.parts?.[0].text;
 
         if (!generatedContent) {
