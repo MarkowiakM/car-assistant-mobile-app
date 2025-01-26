@@ -27,14 +27,27 @@ export default function HomeScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isGettingResponse, setIsGettingResponse] = useState(false);
-  const [isTellingResponse, setIsTellingResponse] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const isWebFocused = useWebFocus();
   const audioRecordingRef = useRef(new Audio.Recording());
   const webAudioPermissionsRef = useRef<MediaStream | null>(null);
   const [history, setHistory] = useRecoilState(historyState);
   const [shadowStyle, setShadowStyle] = useState({});
-  const [audioSrc, setAudioSrc] = useState("");
-  const audioPlayerRef = useRef(new Audio.Sound());
+  const sound = useRef(new Audio.Sound());
+
+  console.log("isRecording: ", isRecording)
+  console.log("isTranscribing: ", isTranscribing)
+  console.log("isGettingResponse: ", isGettingResponse)
+  console.log("isPlaying: ", isPlaying)
+
+  useEffect(() => {
+    return sound.current
+      ? () => {
+        sound.current.unloadAsync();
+      }
+      : undefined;
+  }, []);
+  const [permissionResponse, requestPermission] = Audio.usePermissions();
 
   useLayoutEffect(() => {
     if (isRecording) {
@@ -64,9 +77,21 @@ export default function HomeScreen() {
           ]);
           return readText(response.text);
         })
-        .then((audioResponse) => {
+        .then(async (audioResponse) => {
           setIsGettingResponse(false);
-          setAudioSrc(`data:audio/mp3;base64,${audioResponse.audioContent}`);
+          console.log(audioResponse);
+
+          try {
+            // setIsPlaying(true);
+            await sound.current.loadAsync(
+              { uri: `data:audio/mp3;base64,${audioResponse.audioContent}` }
+            );
+
+            await sound.current.playAsync();
+
+          } catch (error) {
+            console.error('Error loading or playing audio', error);
+          }
         })
         .catch(() => {
           Toast.show({
@@ -76,30 +101,6 @@ export default function HomeScreen() {
         });
     }
   }, [transcribedSpeech]);
-
-  useEffect(() => {
-    if (audioSrc) {
-      (async () => {
-        try {
-          await audioPlayerRef.current.unloadAsync();
-          await audioPlayerRef.current.loadAsync({ uri: audioSrc });
-          audioPlayerRef.current.setOnPlaybackStatusUpdate((status) => {
-            if (status.isLoaded) {
-                setIsTellingResponse(true);
-              const x = setTimeout(() => { setIsTellingResponse(false)}, status.durationMillis ?? 1000);
-              return () => clearTimeout(x);
-          }});
-          await audioPlayerRef.current.playAsync();
-        } catch (error) {
-          Toast.show({
-            type: "error",
-            text1: "Nie udało się odtworzyć odpowiedzi",
-          });
-        }
-      })();
-    }
-  }, [audioSrc]);
-  
   useEffect(() => {
     if (isWebFocused) {
       const getMicAccess = async () => {
@@ -121,12 +122,25 @@ export default function HomeScreen() {
 
   const startRecording = async () => {
     setIsRecording(true);
-    await recordSpeech(
-      audioRecordingRef,
-      setIsRecording,
-      !!webAudioPermissionsRef.current
-    );
+    try {
+      if (permissionResponse?.status !== 'granted') {
+        console.log('Requesting permission..');
+        await requestPermission();
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      await recordSpeech(
+        audioRecordingRef,
+        setIsRecording,
+        !!webAudioPermissionsRef.current
+      );
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
   };
+
 
   const stopRecording = async () => {
     setIsRecording(false);
@@ -155,7 +169,7 @@ export default function HomeScreen() {
         <View className="pt-20 bg-background h-screen text-white flex flex-col items-center justify-center gap-20">
           <Text className="text-white text-3xl mt-auto">Jak mogę ci pomóc?</Text>
           <View className="flex flex-row items-center justify-center h-[80px] gap-1">
-            <SoundWave isRecording={isRecording || isTellingResponse} />
+            <SoundWave isRecording={isRecording || isPlaying} />
           </View>
           <TouchableOpacity
             style={{

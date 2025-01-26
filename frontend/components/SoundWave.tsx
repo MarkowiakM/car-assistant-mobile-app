@@ -17,7 +17,7 @@ const SoundWave: FC<{ isRecording: boolean }> = ({ isRecording }) => {
           toValue: Math.sin(index * 0.3),
           duration: 800,
           delay: index * 40,
-          useNativeDriver: true,
+          useNativeDriver: false,
         })
       );
 
