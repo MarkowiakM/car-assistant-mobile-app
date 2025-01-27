@@ -2,17 +2,25 @@ import { Request, Response } from "express";
 
 export const modelResponse = async (req: Request, res: Response) => {
     const systemPrompt = "Jesteś asystentem w samochodzie, zapytany o wskazanie drogi" +
-        " podaj krótkie, łatwe do zapamiętania wskazówki, skupiając się na nazwach ulic, punktach zainteresowania." +
-        " Gdy zostaniesz zapytany o odległość lub czas jaki zajmie podróż, odpowiedz w krótki i zwięzły sposób. " +
-        "Gdy zostaniesz zapytany o pomoc w rozwiązaniu problemu to podaj zwięzłą odpowiedź w postaci listy kroków." +
-        " W swoich odpowiedziach pod żadnym pozorem nie używaj składni markdown ani znaczników końca linii (\n) " +
-        "gdyż twoja odpowiedź będzie wejściem do syntezatora mowy. Nie numeruj kroków"
+        "podaj łatwe do zapamiętania wskazówki, skupiając się na nazwach ulic, punktach zainteresowania." +
+        "Gdy zostaniesz zapytany o odległość lub czas jaki zajmie podróż odpowiedz w krótki sposób" +
+        "Gdy zostaniesz zapytany o pomoc w rozwiązaniu problemu to poinstruuj mnie jak sobie z nim poradzić." +
+        "W swoich odpowiedziach pod żadnym pozorem nie używaj składni markdown ani znaczników końca linii (\n) " +
+        "gdyż twoja odpowiedź będzie wejściem do syntezatora mowy."
     const data = req.body;
-    const userPrompt = data.userPrompt;
-    const location = data.location; // adres po backendzie
-    const history = data.history;
 
-    if (!userPrompt) return res.status(422).send("No userPrompt was provided.");
+    const location = {lat:51.108065,lon:17.034784}//data.location; // adres po backendzie
+    const response = await fetch(`https://api.geoapify.com/v1/geocode/reverse?lat=
+   ${location.lat}&lon=${location.lon}&format=json&apiKey=${process.env.LOCATION_API_KEY}`);
+    const locationData = await response.json()
+    const city = locationData.results[0].city;
+    const street = locationData.results[0].street;
+    const houseNumber = locationData.results[0].housenumber
+    console.log(`${city}, ${street}, ${houseNumber}`);
+    const history = data.history;
+    if (!data.userPrompt) return res.status(422).send("No userPrompt was provided.");
+
+    const userPrompt = `Znajduję się w mieście ${city}, na ulicy ${street} ${houseNumber} ${data.userPrompt}`;
 
     history.push({
         "role": "user",
@@ -28,44 +36,40 @@ export const modelResponse = async (req: Request, res: Response) => {
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-thinking-exp-01-21:generateContent?key=${process.env.GOOGLE_GEMINI_API_KEY}`,
             {
                 method: "POST",
-                headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                },
                 body: JSON.stringify({
-                    contents: history,
-                    generationConfig: {
-                        temperature: 1,
-                        topP: 0.95,
-                        topK: 64,
-                        maxOutputTokens: 8192,
-                        stopSequences: [],
+                    "contents": history,
+                    "generationConfig": {
+                        "temperature": 1,
+                        "topP": 0.95,
+                        "topK": 64,
+                        "maxOutputTokens": 8192,
+                        "stopSequences": []
                     },
-                    safetySettings: [
+                    "safetySettings": [
                         {
-                            category: "HARM_CATEGORY_HARASSMENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                            "category": "HARM_CATEGORY_HARASSMENT",
+                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
                         },
                         {
-                            category: "HARM_CATEGORY_HATE_SPEECH",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                            "category": "HARM_CATEGORY_HATE_SPEECH",
+                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
                         },
                         {
-                            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
+                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
                         },
                         {
-                            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            threshold: "BLOCK_MEDIUM_AND_ABOVE",
-                        },
+                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                        }
                     ],
-                    systemInstruction: {
-                        parts: [
+                    "systemInstruction": {
+                        "parts": [
                             {
-                                text: systemPrompt,
-                            },
-                        ],
-                    },
+                                "text": `${systemPrompt}`
+                            }
+                        ]
+                    }
                 }),
             }
         );
