@@ -10,6 +10,7 @@ export interface AnswerQuestion {
 export interface ModelRequest {
     history: AnswerQuestion[],
     userPrompt: string,
+    location?: { lat: number, lon: number }
 }
 
 export interface ModelResponse {

@@ -11,7 +11,7 @@ export default function MainScreen() {
   return (
     <View className="bg-background h-screen text-white flex flex-col items-center justify-center gap-20">
       <View className="flex flex-col items-center gap-2">
-        <Text className="text-foreground text-3xl">Twoja droga</Text>
+        <Text className="text-white text-3xl">Twoja droga</Text>
         <Text className="text-[#7AC0D2] text-3xl">nasze wsparcie</Text>
       </View>
       <Image

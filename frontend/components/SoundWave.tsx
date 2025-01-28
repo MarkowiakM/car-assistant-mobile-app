@@ -69,6 +69,7 @@ const SoundWave: FC<{ isRecording: boolean }> = ({ isRecording }) => {
           style={{
             width: 6,
             margin: 2,
+            opacity: isRecording ? 1 : 0.2,
             height: (Math.abs(3 - index % 6) + 1) * 50,
             borderRadius: 10,
             backgroundColor: interpolateBackgroundColor(backgroundColors[index]), // Interpolate background color

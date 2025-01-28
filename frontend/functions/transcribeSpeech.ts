@@ -4,6 +4,7 @@ import * as FileSystem from "expo-file-system";
 import { Platform } from "react-native";
 import * as Device from "expo-device";
 import { readBlobAsBase64 } from "./readBlobAsBase64";
+import { API_URL } from "@/constants/api";
 
 export const transcribeSpeech = async (
   audioRecordingRef: MutableRefObject<Audio.Recording>
@@ -22,11 +23,6 @@ export const transcribeSpeech = async (
 
       if (Platform.OS === "web") {
         const blob = await fetch(recordingUri).then((res) => res.blob());
-
-        // const audioUrl = URL.createObjectURL(blob); // Create an object URL
-        // const sound = new Audio.Sound();
-        // await sound.loadAsync({ uri: audioUrl });
-        // await sound.playAsync();
 
         const foundBase64 = (await readBlobAsBase64(blob)) as string;
         // Example: data:audio/wav;base64,asdjfioasjdfoaipsjdf
@@ -49,10 +45,10 @@ export const transcribeSpeech = async (
       };
 
       if (recordingUri && dataUrl) {
-        const serverUrl =
-          Platform.OS === "android" || Platform.OS === "ios" || Device.isDevice
-            ? "https://20cb-77-222-252-51.ngrok-free.app"
-            : "http://locaalhost:4000";
+    const serverUrl =
+              Platform.OS === "android" || Platform.OS === "ios" || Device.isDevice
+                ? API_URL
+                : "http://localhost:4000"; 
         console.log("Sending audio to server for transcription...", serverUrl);
         const serverResponse = await fetch(`${serverUrl}/speech-to-text`, {
           method: "POST",

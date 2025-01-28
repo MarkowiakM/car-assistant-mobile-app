@@ -1,12 +1,12 @@
 import { Platform } from "react-native";
 import * as Device from "expo-device";
-import { ModelRequest, ModelResponse } from "@/types/AnswerQuestion";
+import { API_URL } from "@/constants/api";
 
 export const readText = async (text: string): Promise<any> => {
     const serverUrl =
               Platform.OS === "android" || Platform.OS === "ios" || Device.isDevice
-                ? "https://20cb-77-222-252-51.ngrok-free.app"
-                : "http://locaalhost:4000"; 
+                ? API_URL
+                : "http://localhost:4000"; 
     console.log("Text to speech...", serverUrl);
 
     const serverResponse = await fetch(`${serverUrl}/text-to-speech`, {

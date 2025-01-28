@@ -28,7 +28,7 @@ export const recordSpeech = async (
         audioRecordingRef.current = new Audio.Recording();
 
         const recordingOptions = {
-          ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+          ...Audio.RecordingOptionsPresets.LOW_QUALITY,
           android: {
             extension: ".amr",
             outputFormat: Audio.AndroidOutputFormat.AMR_WB,
